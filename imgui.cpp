@@ -1126,6 +1126,7 @@ ImGuiStyle::ImGuiStyle()
     AntiAliasedFill         = true;             // Enable anti-aliased filled shapes (rounded rectangles, circles, etc.).
     CurveTessellationTol    = 1.25f;            // Tessellation tolerance when using PathBezierCurveTo() without a specific number of segments. Decrease for highly tessellated curves (higher quality, more polygons), increase to reduce quality.
     CircleTessellationMaxError = 0.30f;         // Maximum error (in pixels) allowed when using AddCircle()/AddCircleFilled() or drawing rounded corner rectangles with no explicit segment count specified. Decrease for higher quality but more geometry.
+    CurrentScale            = 1.0f;
 
     // Default theme
     ImGui::StyleColorsDark(this);
@@ -1158,6 +1159,40 @@ void ImGuiStyle::ScaleAllSizes(float scale_factor)
     DisplayWindowPadding = ImFloor(DisplayWindowPadding * scale_factor);
     DisplaySafeAreaPadding = ImFloor(DisplaySafeAreaPadding * scale_factor);
     MouseCursorScale = ImFloor(MouseCursorScale * scale_factor);
+}
+
+void ImGuiStyle::SetCurrentScale(float scale)
+{
+    if (ImAbs(scale - CurrentScale) < 0.01) {
+        return;
+    }
+
+    float factor = scale / CurrentScale;
+
+    WindowPadding *= factor;
+    WindowRounding *= factor;
+    WindowMinSize *= factor;
+    ChildRounding *= factor;
+    PopupRounding *= factor;
+    FramePadding *= factor;
+    FrameRounding *= factor;
+    ItemSpacing *= factor;
+    ItemInnerSpacing *= factor;
+    CellPadding *= factor;
+    TouchExtraPadding *= factor;
+    IndentSpacing *= factor;
+    ColumnsMinSpacing *= factor;
+    ScrollbarSize *= factor;
+    ScrollbarRounding *= factor;
+    GrabMinSize *= factor;
+    GrabRounding *= factor;
+    LogSliderDeadzone *= factor;
+    TabMinWidthForCloseButton *= factor;
+    DisplayWindowPadding *= factor;
+    DisplaySafeAreaPadding *= factor;
+    MouseCursorScale *= factor;
+
+    CurrentScale = scale;
 }
 
 ImGuiIO::ImGuiIO()
@@ -4177,6 +4212,7 @@ static void ScaleWindow(ImGuiWindow* window, float scale)
     window->Size = ImFloor(window->Size * scale);
     window->SizeFull = ImFloor(window->SizeFull * scale);
     window->ContentSize = ImFloor(window->ContentSize * scale);
+    window->FontDpiScale = scale;
 }
 
 static bool IsWindowActiveAndVisible(ImGuiWindow* window)
@@ -6774,6 +6810,9 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
         WindowSelectViewport(window);
         SetCurrentViewport(window, window->Viewport);
         window->FontDpiScale = (g.IO.ConfigFlags & ImGuiConfigFlags_DpiEnableScaleFonts) ? window->Viewport->DpiScale : 1.0f;
+        if (g.IO.ConfigFlags & ImGuiConfigFlags_DpiEnableScaleFonts) {
+            g.Style.SetCurrentScale(window->FontDpiScale);
+        }
         SetCurrentWindow(window);
         flags = window->Flags;
 
